@@ -25,7 +25,7 @@ import * as ipp from 'eup-ipp-encoder'
 import { CONSTANTS as C } from 'eup-ipp-encoder'
 
 // decode binary buffer from IPP client
-const decoded = ipp.request.decode(buf)
+const decoded = ipp.decoder.decodeRequest(buf)
 
 // ...handle request...
 
@@ -47,7 +47,7 @@ const response: ipp.IPPResponse = {
 }
 
 // encode response to binary buffer
-ipp.response.encode(response) // <Buffer 01 01 00 00 ... >
+ipp.encoder.encode(response) // <Buffer 01 01 00 00 ... >
 ```
 
 ## API
@@ -68,7 +68,7 @@ All constants are re-exported from the main module for convenience.
 Map of IPP status codes to descriptive strings. See `src/status-codes.ts`
 for the complete list.
 
-### `ipp.request.decode(buffer[, start][, end])`
+### `ipp.decoder.decodeRequest(buffer[, start][, end])`
 
 Decode an IPP request buffer and returns the request object.
 
@@ -106,19 +106,16 @@ Request object structure:
 }
 ```
 
-After decoding `ipp.request.decode.bytes` is set to the amount of bytes
-used to decode the object.
-
 Note that any data after the IPP headers are ignored.
 
-### `ipp.request.encode(obj[, buffer][, offset])`
+### `ipp.encoder.encode(obj[, buffer][, offset])`
 
-Encode an IPP request object and returns en encoded buffer.
+Encode an IPP request or response object and returns en encoded buffer.
 
 Options:
 
-- `obj` - The object containing the request
-- `buffer` - An optional buffer in which to write the encoded request
+- `obj` - The object containing the request or response
+- `buffer` - An optional buffer in which to write the encoded data
 - `offset` - An optional offset from where to start writing the encoded
   data in the buffer (defaults to `0`)
 
@@ -146,31 +143,22 @@ Response object structure:
 It's possible to provide a custom IPP version in the same format is seen
 in the request. Default IPP version is 1.1.
 
-After encoding, `ipp.request.encode.bytes` is set to the amount of bytes
-used to encode the object.
-
-### `ipp.request.encodingLength(obj)`
+### `ipp.encoder.encodingLength(obj)`
 
 Returns the number of bytes it would take to encode the given IPP
-request object.
+request or response object.
 
-### `ipp.response.decode(buffer[, start][, end])`
+### `ipp.decoder.decodeResponse(buffer[, start][, end])`
 
-Same as `ipp.request.decode()`, but for IPP responses.
+Same as `ipp.decoder.decodeRequest()`, but for IPP responses.
 
-After decoding `ipp.response.decode.bytes` is set to the amount of bytes
-used to decode the object.
+### `ipp.encoder.encode(obj[, buffer][, offset])`
 
-### `ipp.response.encode(obj[, buffer][, offset])`
+Same as `ipp.encoder.encode()` above, works for both requests and responses.
 
-Same as `ipp.request.encode()`, but for IPP responses.
+### `ipp.encoder.encodingLength(obj)`
 
-After encoding, `ipp.response.encode.bytes` is set to the amount of bytes
-used to encode the object.
-
-### `ipp.response.encodingLength(obj)`
-
-Same as `ipp.request.encodingLength()`, but for IPP responses.
+Same as `ipp.encoder.encodingLength()` above, works for both requests and responses.
 
 ## License
 

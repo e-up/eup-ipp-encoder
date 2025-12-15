@@ -5,15 +5,18 @@ import * as ipp from '../src/index';
 // Fix Buffer usage for TypeScript compatibility
 const Buffer = require('buffer').Buffer;
 
+const encoder = ipp.encoder;
+const decoder = ipp.decoder;
+
 test('encodingLength', function (t) {
   t.test('request minimal', function (t) {
-    const len = ipp.request.encodingLength({ requestId: 0, operationId: 0 });
+    const len = encoder.encodingLength({ requestId: 0, operationId: 0 });
     t.deepEqual(len, 9);
     t.end();
   });
 
   t.test('response minimal', function (t) {
-    const len = ipp.response.encodingLength({ requestId: 0, statusCode: 0 });
+    const len = encoder.encodingLength({ requestId: 0, statusCode: 0 });
     t.deepEqual(len, 9);
     t.end();
   });
@@ -37,7 +40,7 @@ test('encodingLength', function (t) {
         ] }
       ]
     } // end tag: +1 (143)
-    const len = ipp.request.encodingLength(obj);
+    const len = encoder.encodingLength(obj);
     t.deepEqual(len, 143);
     t.end();
   });
@@ -61,7 +64,7 @@ test('encodingLength', function (t) {
         ] }
       ]
     } // end tag: +1 (143)
-    const len = ipp.response.encodingLength(obj);
+    const len = encoder.encodingLength(obj);
     t.deepEqual(len, 143);
     t.end();
   });
@@ -74,7 +77,7 @@ test('encode', function (t) {
         operationId: C.PRINT_JOB,
         requestId: 42
       };
-      const encoded = ipp.request.encode(obj);
+      const encoded = encoder.encode(obj);
       const expected = Buffer.from('010100020000002a03', 'hex');
       t.deepEqual(encoded, expected);
       t.end();
@@ -87,7 +90,7 @@ test('encode', function (t) {
         statusCode: C.SERVER_ERROR_VERSION_NOT_SUPPORTED,
         requestId: 42
       };
-      const encoded = ipp.response.encode(obj);
+      const encoded = encoder.encode(obj);
       const expected = Buffer.from('010105030000002a03', 'hex');
       t.deepEqual(encoded, expected);
       t.end();
@@ -99,7 +102,7 @@ test('encode', function (t) {
         statusCode: C.SUCCESSFUL_OK,
         requestId: 42
       };
-      const encoded = ipp.response.encode(obj);
+      const encoded = encoder.encode(obj);
       const expected = Buffer.from('020000000000002a03', 'hex');
       t.deepEqual(encoded, expected);
       t.end();
@@ -130,7 +133,7 @@ test('encode', function (t) {
           ] }
         ]
       };
-      const encoded = ipp.response.encode(obj);
+      const encoded = encoder.encode(obj);
       const expected = Buffer.from(
         '0101' + // version
         '0000' + // statusCode
@@ -198,7 +201,7 @@ test('decode', function (t) {
         requestId: 42,
         groups: []
       };
-      const decoded = ipp.request.decode(data);
+      const decoded = decoder.decodeRequest(data);
       t.deepEqual(decoded, expected);
       t.end();
     });
@@ -206,7 +209,7 @@ test('decode', function (t) {
     t.test('truncated', function (t) {
       const data = Buffer.from('0101000a0000002a', 'hex');
       t.throws(function () {
-        ipp.request.decode(data);
+        decoder.decodeRequest(data);
       });
       t.end();
     });
@@ -233,9 +236,9 @@ test('encode -> decode', function (t) {
       ] }
     ]
   };
-  const encoded = Buffer.concat([ipp.response.encode(obj), Buffer.from('foo')]);
+  const encoded = Buffer.concat([encoder.encode(obj), Buffer.from('foo')]);
   (obj.groups as any)[1].attributes[1].value[0] = decodeDate;
-  const decoded = ipp.response.decode(encoded);
+  const decoded = decoder.decodeResponse(encoded);
   t.deepEqual(decoded, obj);
   t.end();
 });
