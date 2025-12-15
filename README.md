@@ -1,4 +1,4 @@
-# ipp-encoder
+# eup-ipp-encoder
 
 Internet Printing Protocol (IPP) encoder and decoder.
 
@@ -8,28 +8,29 @@ printer server.
 [![Build status](https://travis-ci.org/watson/ipp-encoder.svg?branch=master)](https://travis-ci.org/watson/ipp-encoder)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://github.com/feross/standard)
 [![abstract-encoding](https://img.shields.io/badge/abstract--encoding-compliant-brightgreen.svg?style=flat)](https://github.com/mafintosh/abstract-encoding)
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.0+-blue.svg)](https://www.typescriptlang.org/)
 
 ## Installation
 
 ```
-npm install ipp-encoder
+npm install eup-ipp-encoder
 ```
 
 ## Usage
 
 Printer server example:
 
-```js
-var ipp = require('ipp-encoder')
-var C = ipp.CONSTANTS
+```typescript
+import * as ipp from 'eup-ipp-encoder'
+import { CONSTANTS as C } from 'eup-ipp-encoder'
 
 // decode binary buffer from IPP client
-var decoded = ipp.request.decode(buf)
+const decoded = ipp.request.decode(buf)
 
 // ...handle request...
 
 // prepare response
-var response = {
+const response: ipp.IPPResponse = {
   statusCode: C.SUCCESSFUL_OK, // set `operationId` instead if encoding a request
   requestId: decoded.requestId,
   groups: [
@@ -53,12 +54,18 @@ ipp.response.encode(response) // <Buffer 01 01 00 00 ... >
 
 ### `ipp.CONSTANTS`
 
-An object containing IPP constants. See `constants.js` for the complete
-list.
+An object containing IPP constants. The constants have been organized into several files:
+- `src/constants.ts` - Main export file
+- `src/tags.ts` - Delimiter tags and value tags
+- `src/operation-ids.ts` - IPP operation IDs
+- `src/status-codes.ts` - Status codes
+- `src/states.ts` - Printer and job states
+
+All constants are re-exported from the main module for convenience.
 
 ### `ipp.STATUS_CODES`
 
-Map of IPP status codes to descriptive strings. See `status-codes.js`
+Map of IPP status codes to descriptive strings. See `src/status-codes.ts`
 for the complete list.
 
 ### `ipp.request.decode(buffer[, start][, end])`
@@ -75,7 +82,7 @@ Options:
 
 Request object structure:
 
-```js
+```typescript
 {
   version: {
     major: 1,
@@ -117,7 +124,7 @@ Options:
 
 Response object structure:
 
-```js
+```typescript
 {
   statusCode: 0x00,
   requestId: 1,
@@ -129,7 +136,7 @@ Response object structure:
     ] },
     { tag: C.JOB_ATTRIBUTES_TAG, attributes: [
       { tag: 0x21, name: 'job-id', value: [147] },
-      { tag: 0x45, name: 'job-uri', value: ['ipp://watson.local.:3000/123'] }
+      { tag: 0x45, name: 'job-uri', value: ['ipp://watson.local.:3000/123'] },
       { tag: 0x44, name: 'job-state', value: ['pending'] }
     ] }
   ]
