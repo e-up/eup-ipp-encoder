@@ -1,13 +1,17 @@
 {
   "name": "eup-ipp-encoder",
-  "version": "5.0.0",
+  "version": "0.0.1",
   "description": "Internet Printing Protocol (IPP) encoder and decoder",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "tsc --noEmit && ts-node tests/test.ts"
+    "test": "tsc --noEmit && ts-node tests/test.ts",
+    "publish": "npm run build && npm publish"
   },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@types/node": "^25.0.2",
     "@types/tape": "^5.8.1",
