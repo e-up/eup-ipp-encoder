@@ -1,5 +1,5 @@
 import test from 'tape';
-import * as C from '../src/constants';
+import * as T from '../src/tags';
 import * as ipp from '../src/index';
 
 // Fix Buffer usage for TypeScript compatibility
@@ -28,15 +28,15 @@ test('encodingLength', function (t) {
       operationId: 0,
       groups: [
         { tag: 0, attributes: [ // +1 (9)
-          { tag: C.KEYWORD, name: 'string', value: ['foo'] }, // +1+2+6+2+3=14 (23)
-          { tag: C.KEYWORD, name: 'array', value: ['foo', 'bar'] }, // +1+2+5+2+3+1+2+0+2+3=21 (44)
-          { tag: C.BOOLEAN, name: 'bool', value: [true] }, // +1+2+4+2+1=10 (54)
-          { tag: C.ENUM, name: 'enum', value: [1] } // +1+2+4+2+4=13 (67)
+          { tag: T.KEYWORD, name: 'string', value: ['foo'] }, // +1+2+6+2+3=14 (23)
+          { tag: T.KEYWORD, name: 'array', value: ['foo', 'bar'] }, // +1+2+5+2+3+1+2+0+2+3=21 (44)
+          { tag: T.BOOLEAN, name: 'bool', value: [true] }, // +1+2+4+2+1=10 (54)
+          { tag: T.ENUM, name: 'enum', value: [1] } // +1+2+4+2+4=13 (67)
         ] },
         { tag: 1, attributes: [ // +1 (68)
-          { tag: C.KEYWORD, name: 'string', value: ['foo'] }, // +1+2+6+2+3=14 (82)
-          { tag: C.TEXT_WITH_LANG, name: 'text-with-language', value: [{ lang: 'fr-CA', value: 'fou' }] }, // +1+2+18+2+2+5+2+3=35 (117)
-          { tag: C.DATE_TIME, name: 'date-time', value: [date] } // +1+2+9+2+11=25 (142)
+          { tag: T.KEYWORD, name: 'string', value: ['foo'] }, // +1+2+6+2+3=14 (82)
+          { tag: T.TEXT_WITH_LANG, name: 'text-with-language', value: [{ lang: 'fr-CA', value: 'fou' }] }, // +1+2+18+2+2+5+2+3=35 (117)
+          { tag: T.DATE_TIME, name: 'date-time', value: [date] } // +1+2+9+2+11=25 (142)
         ] }
       ]
     } // end tag: +1 (143)
@@ -52,15 +52,15 @@ test('encodingLength', function (t) {
       statusCode: 0,
       groups: [
         { tag: 0, attributes: [ // +1 (9)
-          { tag: C.KEYWORD, name: 'string', value: ['foo'] }, // +1+2+6+2+3=14 (23)
-          { tag: C.KEYWORD, name: 'array', value: ['foo', 'bar'] }, // +1+2+5+2+3+1+2+0+2+3=21 (44)
-          { tag: C.BOOLEAN, name: 'bool', value: [true] }, // +1+2+4+2+1=10 (54)
-          { tag: C.ENUM, name: 'enum', value: [1] } // +1+2+4+2+4=13 (67)
+          { tag: T.KEYWORD, name: 'string', value: ['foo'] }, // +1+2+6+2+3=14 (23)
+          { tag: T.KEYWORD, name: 'array', value: ['foo', 'bar'] }, // +1+2+5+2+3+1+2+0+2+3=21 (44)
+          { tag: T.BOOLEAN, name: 'bool', value: [true] }, // +1+2+4+2+1=10 (54)
+          { tag: T.ENUM, name: 'enum', value: [1] } // +1+2+4+2+4=13 (67)
         ] },
         { tag: 1, attributes: [ // +1 (68)
-          { tag: C.KEYWORD, name: 'string', value: ['foo'] }, // +1+2+6+2+3=14 (82)
-          { tag: C.TEXT_WITH_LANG, name: 'text-with-language', value: [{ lang: 'fr-CA', value: 'fou' }] }, // +1+2+18+2+2+5+2+3=35 (117)
-          { tag: C.DATE_TIME, name: 'date-time', value: [date] } // +1+2+9+2+11=25 (142)
+          { tag: T.KEYWORD, name: 'string', value: ['foo'] }, // +1+2+6+2+3=14 (82)
+          { tag: T.TEXT_WITH_LANG, name: 'text-with-language', value: [{ lang: 'fr-CA', value: 'fou' }] }, // +1+2+18+2+2+5+2+3=35 (117)
+          { tag: T.DATE_TIME, name: 'date-time', value: [date] } // +1+2+9+2+11=25 (142)
         ] }
       ]
     } // end tag: +1 (143)
@@ -74,7 +74,7 @@ test('encode', function (t) {
   t.test('request', function (t) {
     t.test('minimal', function (t) {
       const obj = {
-        operationId: C.PRINT_JOB,
+        operationId: 0x0002,
         requestId: 42
       };
       const encoded = encoder.encode(obj);
@@ -87,7 +87,7 @@ test('encode', function (t) {
   t.test('response', function (t) {
     t.test('minimal', function (t) {
       const obj = {
-        statusCode: C.SERVER_ERROR_VERSION_NOT_SUPPORTED,
+        statusCode: 0x0503,
         requestId: 42
       };
       const encoded = encoder.encode(obj);
@@ -99,7 +99,7 @@ test('encode', function (t) {
     t.test('custom version', function (t) {
       const obj = {
         version: { major: 2, minor: 0 },
-        statusCode: C.SUCCESSFUL_OK,
+        statusCode: 0x0000,
         requestId: 42
       };
       const encoded = encoder.encode(obj);
@@ -117,19 +117,19 @@ test('encode', function (t) {
       const dateHex = '07df0c0101172d06' + sign + zone.toString('hex');
 
       const obj = {
-        statusCode: C.SUCCESSFUL_OK,
+        statusCode: 0x0000,
         requestId: 42,
         groups: [
-          { tag: C.OPERATION_ATTRIBUTES_TAG, attributes: [
-            { tag: C.KEYWORD, name: 'string', value: ['foo'] },
-            { tag: C.KEYWORD, name: 'array', value: ['foo', 'bar'] },
-            { tag: C.BOOLEAN, name: 'bool', value: [true] },
-            { tag: C.ENUM, name: 'enum', value: [42] }
+          { tag: T.OPERATION_ATTRIBUTES_TAG, attributes: [
+            { tag: T.KEYWORD, name: 'string', value: ['foo'] },
+            { tag: T.KEYWORD, name: 'array', value: ['foo', 'bar'] },
+            { tag: T.BOOLEAN, name: 'bool', value: [true] },
+            { tag: T.ENUM, name: 'enum', value: [42] }
           ] },
-          { tag: C.JOB_ATTRIBUTES_TAG, attributes: [
-            { tag: C.KEYWORD, name: 'string', value: ['foo'] },
-            { tag: C.NAME_WITH_LANG, name: 'name-with-language', value: [{ lang: 'fr-CA', value: 'fou' }] },
-            { tag: C.DATE_TIME, name: 'date-time', value: [date] }
+          { tag: T.JOB_ATTRIBUTES_TAG, attributes: [
+            { tag: T.KEYWORD, name: 'string', value: ['foo'] },
+            { tag: T.NAME_WITH_LANG, name: 'name-with-language', value: [{ lang: 'fr-CA', value: 'fou' }] },
+            { tag: T.DATE_TIME, name: 'date-time', value: [date] }
           ] }
         ]
       };
@@ -221,18 +221,18 @@ test('encode -> decode', function (t) {
   const decodeDate = new Date(2015, 11, 1, 1, 23, 45, 600);
   const obj = {
     version: { major: 1, minor: 0 },
-    statusCode: C.SUCCESSFUL_OK,
+    statusCode: 0x0000,
     requestId: 42,
     groups: [
-      { tag: C.OPERATION_ATTRIBUTES_TAG, attributes: [
-        { tag: C.KEYWORD, name: 'string', value: ['foo'] },
-        { tag: C.KEYWORD, name: 'array', value: ['foo', 'bar'] },
-        { tag: C.BOOLEAN, name: 'bool', value: [true] },
-        { tag: C.ENUM, name: 'enum', value: [42] }
+      { tag: T.OPERATION_ATTRIBUTES_TAG, attributes: [
+        { tag: T.KEYWORD, name: 'string', value: ['foo'] },
+        { tag: T.KEYWORD, name: 'array', value: ['foo', 'bar'] },
+        { tag: T.BOOLEAN, name: 'bool', value: [true] },
+        { tag: T.ENUM, name: 'enum', value: [42] }
       ] },
-      { tag: C.JOB_ATTRIBUTES_TAG, attributes: [
-        { tag: C.KEYWORD, name: 'string', value: ['foo'] },
-        { tag: C.DATE_TIME, name: 'date-time', value: [encodeDate] }
+      { tag: T.JOB_ATTRIBUTES_TAG, attributes: [
+        { tag: T.KEYWORD, name: 'string', value: ['foo'] },
+        { tag: T.DATE_TIME, name: 'date-time', value: [encodeDate] }
       ] }
     ]
   };

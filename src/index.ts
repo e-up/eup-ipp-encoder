@@ -1,15 +1,9 @@
-import * as C from './constants';
-import { statusCodes } from './status-codes';
+import { INTEGER, BOOLEAN, ENUM, DATE_TIME, TEXT_WITH_LANG, NAME_WITH_LANG, END_OF_ATTRIBUTES_TAG } from './tags';
 import { Buffer } from 'node:buffer';
 import { Version, Attribute, AttributeGroup, IPPBase, IPPRequest, IPPResponse, LangStrValue, IPPDecoder, IPPEncoder } from './interfaces';
 import { StringCoder, IntCoder, EnumCoder, BoolCoder, LangStringCoder, DateTimeCoder } from './type-coders';
-
-export const CONSTANTS = C;
-export { statusCodes as STATUS_CODES };
-// Re-export interfaces for backwards compatibility
-export type { Version, Attribute, AttributeGroup, IPPBase, IPPRequest, IPPResponse, LangStrValue, IPPDecoder, IPPEncoder } from './interfaces';
-// Re-export type coders for potential use by consumers
-export { StringCoder, IntCoder, EnumCoder, BoolCoder, LangStringCoder, DateTimeCoder } from './type-coders';
+// Export only essential interfaces for IPP encoding/decoding
+export type { Version, AttributeValue, Attribute, AttributeGroup, IPPBase, IPPRequest, IPPResponse, LangStrValue, IPPDecoder, IPPEncoder } from './interfaces';
 
 
 // IPP Decoder Implementation
@@ -30,28 +24,28 @@ export class IPPDecoderImpl implements IPPDecoder {
     this.dateTimeCoder = new DateTimeCoder();
   }
 
-  private decodeBase(buf: Buffer, start?: number, end?: number): IPPBase & { _oprationIdOrStatusCode: number } {
+  private decodeBase(buf: Buffer, start?: number, end?: number): { version: Version; requestId: number; groups: AttributeGroup[]; operationIdOrStatusCode: number } {
     if (!start) start = 0;
     if (!end) end = buf.length;
     let offset = start;
 
-    const obj: IPPBase & { _oprationIdOrStatusCode: number; version: Version; groups: AttributeGroup[] } = {
+    const obj = {
       version: { major: 0, minor: 0 },
-      groups: [],
-      _oprationIdOrStatusCode: 0,
-      requestId: 0
+      groups: [] as AttributeGroup[],
+      requestId: 0,
+      operationIdOrStatusCode: 0
     };
 
     obj.version.major = buf.readInt8(offset++);
     obj.version.minor = buf.readInt8(offset++);
-    obj._oprationIdOrStatusCode = buf.readInt16BE(offset);
+    obj.operationIdOrStatusCode = buf.readInt16BE(offset);
     offset += 2;
     obj.requestId = buf.readInt32BE(offset);
     offset += 4;
 
     // attribute groups
     let tag = buf.readInt8(offset++); // delimiter-tag
-    while (tag !== C.END_OF_ATTRIBUTES_TAG && offset < end) {
+    while (tag !== END_OF_ATTRIBUTES_TAG && offset < end) {
       const group: AttributeGroup = { tag, attributes: [] };
 
       // attribute-with-one-value or additional-value
@@ -63,20 +57,20 @@ export class IPPDecoderImpl implements IPPDecoder {
 
         let valueResult: { value: any; bytesConsumed: number };
         switch (tag) {
-          case C.INTEGER:
+          case INTEGER:
             valueResult = this.intCoder.decode(buf, offset);
             break;
-          case C.BOOLEAN:
+          case BOOLEAN:
             valueResult = this.boolCoder.decode(buf, offset);
             break;
-          case C.ENUM:
+          case ENUM:
             valueResult = this.enumCoder.decode(buf, offset);
             break;
-          case C.DATE_TIME:
+          case DATE_TIME:
             valueResult = this.dateTimeCoder.decode(buf, offset);
             break;
-          case C.TEXT_WITH_LANG:
-          case C.NAME_WITH_LANG:
+          case TEXT_WITH_LANG:
+          case NAME_WITH_LANG:
             valueResult = this.langStringCoder.decode(buf, offset);
             break;
           default:
@@ -103,22 +97,22 @@ export class IPPDecoderImpl implements IPPDecoder {
 
   decodeRequest(buf: Buffer, start?: number, end?: number): IPPRequest {
     const obj = this.decodeBase(buf, start, end);
-    const result = {
-      ...obj,
-      operationId: obj._oprationIdOrStatusCode
+    return {
+      version: obj.version,
+      requestId: obj.requestId,
+      groups: obj.groups,
+      operationId: obj.operationIdOrStatusCode
     };
-    delete (result as any)._oprationIdOrStatusCode;
-    return result as IPPRequest;
   }
 
   decodeResponse(buf: Buffer, start?: number, end?: number): IPPResponse {
     const obj = this.decodeBase(buf, start, end);
-    const result = {
-      ...obj,
-      statusCode: obj._oprationIdOrStatusCode
+    return {
+      version: obj.version,
+      requestId: obj.requestId,
+      groups: obj.groups,
+      statusCode: obj.operationIdOrStatusCode
     };
-    delete (result as any)._oprationIdOrStatusCode;
-    return result as IPPResponse;
   }
 }
 
@@ -168,24 +162,24 @@ export class IPPEncoderImpl implements IPPEncoder {
 
             let encodeResult: { bytesWritten: number };
             switch (attr.tag) {
-              case C.INTEGER:
-                encodeResult = this.intCoder.encode(val, buf, pos);
+              case INTEGER:
+                encodeResult = this.intCoder.encode(val as number, buf, pos);
                 break;
-              case C.BOOLEAN:
-                encodeResult = this.boolCoder.encode(val, buf, pos);
+              case BOOLEAN:
+                encodeResult = this.boolCoder.encode(val as boolean, buf, pos);
                 break;
-              case C.ENUM:
-                encodeResult = this.enumCoder.encode(val, buf, pos);
+              case ENUM:
+                encodeResult = this.enumCoder.encode(val as number, buf, pos);
                 break;
-              case C.DATE_TIME:
-                encodeResult = this.dateTimeCoder.encode(val, buf, pos);
+              case DATE_TIME:
+                encodeResult = this.dateTimeCoder.encode(val as Date, buf, pos);
                 break;
-              case C.TEXT_WITH_LANG:
-              case C.NAME_WITH_LANG:
-                encodeResult = this.langStringCoder.encode(val, buf, pos);
+              case TEXT_WITH_LANG:
+              case NAME_WITH_LANG:
+                encodeResult = this.langStringCoder.encode(val as LangStrValue, buf, pos);
                 break;
               default:
-                encodeResult = this.stringCoder.encode(val, buf, pos);
+                encodeResult = this.stringCoder.encode(val as string, buf, pos);
             }
             pos += encodeResult.bytesWritten;
           });
@@ -193,7 +187,7 @@ export class IPPEncoderImpl implements IPPEncoder {
       });
     }
 
-    buf.writeInt8(C.END_OF_ATTRIBUTES_TAG, pos++);
+    buf.writeInt8(END_OF_ATTRIBUTES_TAG, pos++);
 
     if (obj.data) pos += obj.data.copy(buf, pos);
 
@@ -208,18 +202,19 @@ export class IPPEncoderImpl implements IPPEncoder {
         len += 1; // begin-attribute-group-tag
         len += group.attributes.reduce((len, attr) => {
           const value = Array.isArray(attr.value) ? attr.value : [attr.value];
-          len += value.reduce((len, val) => {
-            len += 1; // value-tag
-            len += this.stringCoder.encodingLength(len === 1 ? attr.name : '');
+          len += value.reduce((acc: number, val, i) => {
+            let newLen = acc;
+            newLen += 1; // value-tag
+            newLen += this.stringCoder.encodingLength(i === 0 ? attr.name : '');
 
             switch (attr.tag) {
-              case C.INTEGER: return len + this.intCoder.encodingLength(val);
-              case C.BOOLEAN: return len + this.boolCoder.encodingLength(val);
-              case C.ENUM: return len + this.enumCoder.encodingLength(val);
-              case C.DATE_TIME: return len + this.dateTimeCoder.encodingLength(val);
-              case C.TEXT_WITH_LANG:
-              case C.NAME_WITH_LANG: return len + this.langStringCoder.encodingLength(val);
-              default: return len + this.stringCoder.encodingLength(val);
+              case INTEGER: return newLen + this.intCoder.encodingLength(val as number);
+              case BOOLEAN: return newLen + this.boolCoder.encodingLength(val as boolean);
+              case ENUM: return newLen + this.enumCoder.encodingLength(val as number);
+              case DATE_TIME: return newLen + this.dateTimeCoder.encodingLength(val as Date);
+              case TEXT_WITH_LANG:
+              case NAME_WITH_LANG: return newLen + this.langStringCoder.encodingLength(val as LangStrValue);
+              default: return newLen + this.stringCoder.encodingLength(val as string);
             }
           }, 0);
 

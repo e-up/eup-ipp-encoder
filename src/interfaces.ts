@@ -3,10 +3,12 @@ export interface Version {
   minor: number;
 }
 
+export type AttributeValue = string | boolean | number | Date | LangStrValue | Buffer;
+
 export interface Attribute {
   tag: number;
   name: string;
-  value: any[];
+  value: AttributeValue[];
 }
 
 export interface AttributeGroup {
