@@ -1,86 +1,58 @@
 # eup-ipp-encoder
 
-Internet Printing Protocol (IPP) encoder and decoder.
+互联网打印协议（IPP）编码器和解码器。
 
-This module can be used to implement either a printing client or a
-printer server.
+该模块为IPP消息提供纯序列化和反序列化实现，仅专注于编码和解码功能。
 
-[![Build status](https://travis-ci.org/watson/ipp-encoder.svg?branch=master)](https://travis-ci.org/watson/ipp-encoder)
-[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://github.com/feross/standard)
-[![abstract-encoding](https://img.shields.io/badge/abstract--encoding-compliant-brightgreen.svg?style=flat)](https://github.com/mafintosh/abstract-encoding)
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.0+-blue.svg)](https://www.typescriptlang.org/)
 
-## Installation
+## 安装
 
 ```
 npm install eup-ipp-encoder
 ```
 
-## Usage
+## 使用
 
-Printer server example:
+打印机服务器示例：
 
 ```typescript
 import * as ipp from 'eup-ipp-encoder'
-import { CONSTANTS as C } from 'eup-ipp-encoder'
 
-// decode binary buffer from IPP client
+// 解码来自IPP客户端的二进制缓冲区
 const decoded = ipp.decoder.decodeRequest(buf)
 
-// ...handle request...
+// ...处理请求...
 
-// prepare response
+// 准备响应
 const response: ipp.IPPResponse = {
-  statusCode: C.SUCCESSFUL_OK, // set `operationId` instead if encoding a request
+  statusCode: 0x00, // 如果编码请求，则设置 `operationId` 代替
   requestId: decoded.requestId,
   groups: [
-    { tag: C.OPERATION_ATTRIBUTES_TAG, attributes: [
-      { tag: C.CHARSET, name: 'attributes-charset', value: 'utf-8' },
-      { tag: C.NATURAL_LANG, name: 'attributes-natural-language', value: 'en-us' },
-      { tag: C.TEXT_WITH_LANG, name: 'status-message', value: { lang: 'en-us', value: 'successful-ok' } }
-    ] },
-    { tag: C.JOB_ATTRIBUTES_TAG, attributes: [
-      { tag: C.INTEGER, name: 'job-id', value: 147 },
-      { tag: C.NAME_WITH_LANG, name: 'job-name', value: { lang: 'en-us', value: 'Foobar' } }
+    { tag: 0x01, attributes: [ // OPERATION_ATTRIBUTES_TAG
+      { tag: 0x21, name: 'job-id', value: [147] },
+      { tag: 0x36, name: 'job-name', value: [{ lang: 'en-us', value: 'Foobar' }] }
     ] }
   ]
 }
 
-// encode response to binary buffer
+// 将响应编码为二进制缓冲区
 ipp.encoder.encode(response) // <Buffer 01 01 00 00 ... >
 ```
 
 ## API
 
-### `ipp.CONSTANTS`
-
-An object containing IPP constants. The constants have been organized into several files:
-- `src/constants.ts` - Main export file
-- `src/tags.ts` - Delimiter tags and value tags
-- `src/operation-ids.ts` - IPP operation IDs
-- `src/status-codes.ts` - Status codes
-- `src/states.ts` - Printer and job states
-
-All constants are re-exported from the main module for convenience.
-
-### `ipp.STATUS_CODES`
-
-Map of IPP status codes to descriptive strings. See `src/status-codes.ts`
-for the complete list.
-
 ### `ipp.decoder.decodeRequest(buffer[, start][, end])`
 
-Decode an IPP request buffer and returns the request object.
+解码IPP请求缓冲区并返回请求对象。
 
-Options:
+选项：
 
-- `buffer` - The buffer containing the request
-- `start` - An optional start-offset from where to start parsing the
-  request (defaults to `0`)
-- `end` - An optional end-offset specifying at which byte to end the
-  decoding (defaults to `buffer.length`)
+- `buffer` - 包含请求的缓冲区
+- `start` - 可选的开始偏移量，从该位置开始解析请求（默认为 `0`）
+- `end` - 可选的结束偏移量，指定解码在哪个字节结束（默认为 `buffer.length`）
 
-Request object structure:
+请求对象结构：
 
 ```typescript
 {
@@ -91,75 +63,69 @@ Request object structure:
   operationId: 0x02,
   requestId: 1,
   groups: [
-    { tag: C.OPERATION_ATTRIBUTES_TAG, attributes: [
-      { tag: 0x47, name: 'attributes-charset', value: ['utf-8'] },
-      { tag: 0x48, name: 'attributes-natural-language', value: ['en-us'] },
-      { tag: 0x45, name: 'printer-uri', value: ['ipp://watson.local.:3000/'] },
-      { tag: 0x42, name: 'job-name', value: ['foobar'] },
+    { tag: 0x01, attributes: [ // OPERATION_ATTRIBUTES_TAG
+      { tag: 0x21, name: 'job-id', value: [147] },
+      { tag: 0x36, name: 'job-name', value: [{ lang: 'en-us', value: 'Foobar' }] },
       { tag: 0x22, name: 'ipp-attribute-fidelity', value: [true] }
-    ] },
-    { tag: C.JOB_ATTRIBUTES_TAG, attributes: [
-      { tag: 0x21, name: 'copies', value: [20] },
-      { tag: 0x44, name: 'sides', value: ['two-sided-long-edge'] }
     ] }
   ]
 }
 ```
 
-Note that any data after the IPP headers are ignored.
+### `ipp.decoder.decodeResponse(buffer[, start][, end])`
+
+与 `ipp.decoder.decodeRequest()` 相同，但用于IPP响应。
 
 ### `ipp.encoder.encode(obj[, buffer][, offset])`
 
-Encode an IPP request or response object and returns en encoded buffer.
+编码IPP请求或响应对象并返回编码后的缓冲区。
 
-Options:
+选项：
 
-- `obj` - The object containing the request or response
-- `buffer` - An optional buffer in which to write the encoded data
-- `offset` - An optional offset from where to start writing the encoded
-  data in the buffer (defaults to `0`)
+- `obj` - 包含请求或响应的对象
+- `buffer` - 可选的缓冲区，用于写入编码数据
+- `offset` - 可选的偏移量，从该位置开始在缓冲区中写入编码数据（默认为 `0`）
 
-Response object structure:
+响应对象结构：
 
 ```typescript
 {
   statusCode: 0x00,
   requestId: 1,
   groups: [
-    { tag: C.OPERATION_ATTRIBUTES_TAG, attributes: [
-      { tag: 0x47, name: 'attributes-charset', value: ['utf-8'] },
-      { tag: 0x48, name: 'attributes-natural-language', value: ['en-us'] },
-      { tag: 0x41, name: 'status-message', value: ['successful-ok'] }
-    ] },
-    { tag: C.JOB_ATTRIBUTES_TAG, attributes: [
+    { tag: 0x01, attributes: [ // OPERATION_ATTRIBUTES_TAG
       { tag: 0x21, name: 'job-id', value: [147] },
-      { tag: 0x45, name: 'job-uri', value: ['ipp://watson.local.:3000/123'] },
-      { tag: 0x44, name: 'job-state', value: ['pending'] }
+      { tag: 0x22, name: 'ipp-attribute-fidelity', value: [true] },
+      { tag: 0x36, name: 'job-name', value: [{ lang: 'en-us', value: 'Foobar' }] }
     ] }
   ]
 }
 ```
 
-It's possible to provide a custom IPP version in the same format is seen
-in the request. Default IPP version is 1.1.
+可以提供与请求中相同格式的自定义IPP版本。默认IPP版本为1.1。
 
 ### `ipp.encoder.encodingLength(obj)`
 
-Returns the number of bytes it would take to encode the given IPP
-request or response object.
+返回编码给定IPP请求或响应对象所需的字节数。
 
-### `ipp.decoder.decodeResponse(buffer[, start][, end])`
+## 支持的标签
 
-Same as `ipp.decoder.decodeRequest()`, but for IPP responses.
+该库支持以下IPP标签进行编码和解码：
 
-### `ipp.encoder.encode(obj[, buffer][, offset])`
+- **分隔符标签**：
+  - OPERATION_ATTRIBUTES_TAG (0x01)
+  - JOB_ATTRIBUTES_TAG (0x02)
+  - END_OF_ATTRIBUTES_TAG (0x03)
 
-Same as `ipp.encoder.encode()` above, works for both requests and responses.
+- **值标签**：
+  - INTEGER (0x21)
+  - BOOLEAN (0x22)
+  - ENUM (0x23)
+  - DATE_TIME (0x31)
+  - TEXT_WITH_LANG (0x35)
+  - NAME_WITH_LANG (0x36)
+  - KEYWORD (0x44)
 
-### `ipp.encoder.encodingLength(obj)`
-
-Same as `ipp.encoder.encodingLength()` above, works for both requests and responses.
-
-## License
+## 许可证
 
 MIT

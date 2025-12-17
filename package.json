@@ -1,6 +1,6 @@
 {
   "name": "eup-ipp-encoder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Internet Printing Protocol (IPP) encoder and decoder",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,7 @@
 
   "repository": {
     "type": "git",
-    "url": "https://github.com/watson/ipp-encoder.git"
+    "url": "https://github.com/e-up/eup-ipp-encoder"
   },
   "keywords": [
     "ipp",
@@ -39,12 +39,12 @@
     "parse",
     "parser"
   ],
-  "author": "Thomas Watson Steen <w@tson.dk> (https://twitter.com/wa7son)",
+  "author": "Iamee <iamee@e-up.io> (https://github.com/e-sen)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/watson/ipp-encoder/issues"
+    "url": "https://github.com/e-up/eup-ipp-encoder/issues"
   },
-  "homepage": "https://github.com/watson/ipp-encoder",
+  "homepage": "https://github.com/e-up/eup-ipp-encoder",
   "coordinates": [
     59.92006379999999,
     10.7402093
